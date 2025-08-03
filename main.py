@@ -43,7 +43,8 @@ async def update_trmnl(myapi) -> None:
             float(trmnl_payload["grid_to_home"])
             + float(trmnl_payload["battery_to_home"])
         ) * FLAT_PRICE_PER_KWH
-        trmnl_payload["total_saved"] = usage - costs
+        saved = usage - costs
+        trmnl_payload["total_saved"] = f"{saved:.2f}"
         trmnl_payload["solar_data"] = [
             [trmnl_payload["date"], trmnl_payload["solar_production"]]
         ]
