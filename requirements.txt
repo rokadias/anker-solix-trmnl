@@ -1,4 +1,5 @@
 anker_solix_api @ git+https://github.com/rokadias/anker_solix_api.git@51bbfd4cdd5d3cc0ca04e0a3530b7c4460e67235
-cryptography
-aiohttp
-aiofiles
+cryptography==45.0.5
+aiohttp==3.12.15
+aiofiles==24.1.0
+gunicorn==23.0.0
