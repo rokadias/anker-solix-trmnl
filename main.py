@@ -88,6 +88,8 @@ async def solix_sync(request):
         await myapi.update_device_energy()
         await update_trmnl(myapi)
 
+    return aiohttp.web.Response(text="OK")
+
 
 async def create_app() -> None:
     """Create the aiohttp session and run the example."""
