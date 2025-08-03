@@ -1,1 +1,4 @@
-anker_solix_api @ git+https://github.com/thomluther/anker-solix-api@7dcdb2e53365ed36dd9aa3b5aade4721521f8aac
+anker_solix_api @ git+https://github.com/rokadias/anker_solix_api.git@51bbfd4cdd5d3cc0ca04e0a3530b7c4460e67235
+cryptography
+aiohttp
+aiofiles
