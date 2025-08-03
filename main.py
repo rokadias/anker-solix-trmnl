@@ -27,13 +27,24 @@ def _out(jsondata):
     CONSOLE.info(json.dumps(jsondata, indent=2))
 
 
+FLAT_PRICE_PER_KWH = 0.1375
+
+
 async def update_trmnl(myapi) -> None:
     _system = list(myapi.sites.values())[0]
 
     if "energy_details" in _system and "last_period" in _system["energy_details"]:
         _out(_system["energy_details"]["last_period"])
         trmnl_payload = copy.deepcopy(_system["energy_details"]["last_period"])
-        trmnl_payload["total_saved"] = 3.00
+        costs = (
+            float(trmnl_payload["grid_to_battery"])
+            + float(trmnl_payload["grid_to_home"])
+        ) * FLAT_PRICE_PER_KWH
+        usage = (
+            float(trmnl_payload["grid_to_home"])
+            + float(trmnl_payload["battery_to_home"])
+        ) * FLAT_PRICE_PER_KWH
+        trmnl_payload["total_saved"] = usage - costs
         trmnl_payload["solar_data"] = [
             [trmnl_payload["date"], trmnl_payload["solar_production"]]
         ]
@@ -49,7 +60,6 @@ async def update_trmnl(myapi) -> None:
 
         plugin_uuid = os.environ.get("TRML_PLUGIN_UUID")
         assert plugin_uuid is not None
-        print(f"plugin_uuid: {plugin_uuid}")
 
         async with ClientSession() as session:
             async with session.post(

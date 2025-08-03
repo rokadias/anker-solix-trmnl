@@ -1,0 +1,7 @@
+  - description: "Sync solix with trmnl data"
+    url: /task/solix_sync
+    timezone: America/Los_Angeles
+    schedule: 0 5 * * *
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_backoff_seconds: 30
