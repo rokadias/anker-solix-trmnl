@@ -71,7 +71,7 @@ async def update_trmnl(myapi) -> None:
                 print("Response JSON:", data)
 
 
-async def solix_sync():
+async def solix_sync(request):
     CONSOLE.info("Retrieving from Solix API:")
     async with ClientSession() as websession:
 
