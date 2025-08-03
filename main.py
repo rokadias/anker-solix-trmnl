@@ -99,6 +99,6 @@ async def create_app() -> None:
 # run async main
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        aiohttp.web.run_app(create_app(), port=os.environ.get("PORT", 8080))
     except Exception as err:  # pylint: disable=broad-exception-caught  # noqa: BLE001
         CONSOLE.exception("%s: %s", type(err), err)
