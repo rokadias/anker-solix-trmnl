@@ -9,7 +9,6 @@ from datetime import datetime
 import json
 import os
 import logging
-from flask import Flask
 from pathlib import Path
 
 from aiohttp import ClientSession
