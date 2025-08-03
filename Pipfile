@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+anker_solix_api = { git = "https://github.com/rokadias/anker_solix_api.git", ref = "51bbfd4cdd5d3cc0ca04e0a3530b7c4460e67235"}
+cryptography = "*"
+aiohttp = "*"
+aiofiles = "*"
+
+[dev-packages]
+pre-commit = "*"
+
+[requires]
+python_version = "3.13.5"

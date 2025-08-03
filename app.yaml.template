@@ -1,0 +1,9 @@
+service: anker-solix-trmnl
+runtime: python313
+instance_class: F1
+
+env_variables:
+  ANKERUSER: "{FILL_ME_OUT}"
+  ANKERPASSWORD: "{FILL_ME_OUT}"
+  ANKERCOUNTRY: "us"
+  TRML_PLUGIN_UUID: "{FILL_ME_OUT}"

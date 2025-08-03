@@ -1,0 +1,27 @@
+[project]
+name = "Anker-Solix-Trmnl"
+version = "2.7.0"
+description = "Python library for Anker Solix Power devices (Solarbank, Inverter etc) to Trmnl screen data"
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/rokadias/anker-solix-trmnl"
+"Bug Tracker" = "https://github.com/rokadias/anker-solix-trmnl/issues"
+"Discussions" = "https://github.com/rokadias/anker-solix-trmnl/discussions"
+
+[tool.isort]
+profile="black"
+
+[tool.pylint]
+jobs=0
+disable = [
+    "import-error",
+    "line-too-long",
+    "invalid-name",
+    "protected-access",
+]
