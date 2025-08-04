@@ -1,3 +1,4 @@
+cron:
   - description: "Sync solix with trmnl data"
     url: /task/solix_sync
     timezone: America/Los_Angeles
