@@ -1,8 +1,9 @@
 cron:
   - description: "Sync solix with trmnl data"
-    url: /task/solix_sync
+    url: /task/solix-sync
     timezone: America/Los_Angeles
-    schedule: 0 5 * * *
+    schedule: every day 05:00
+    target: anker-solix-trmnl
     retry_parameters:
       min_backoff_seconds: 2.5
       max_backoff_seconds: 30
