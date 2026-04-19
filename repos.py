@@ -91,14 +91,10 @@ class HomeEnergyDailyExportRepo:
         )
 
         query_result = aggregation_query.fetch()
-        for result_page in query_result:
-            for result in result_page:
-                results["total_value_of_energy_consumed"] += result.get(
-                    "total_value_of_energy_consumed"
-                )
-                results["total_cost_of_energy_consumed"] += result.get(
-                    "total_cost_of_energy_consumed"
-                )
+        for aggregation_results in query_result:
+            for result in aggregation_results:
+                if result.alias in results:
+                    results[result.alias] += result.value
 
         aggregation = HomeEnergyDailyAggregation(**results)
         aggregation.total_saved = (

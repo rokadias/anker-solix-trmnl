@@ -1,0 +1,5 @@
+indexes:
+- kind: HomeEnergyDailyExport
+  properties:
+  - name: cost_of_energy_consumed
+  - name: value_of_energy_consumed

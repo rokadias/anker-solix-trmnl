@@ -70,10 +70,11 @@ async def update_trmnl(myapi) -> None:
         _out(_system["energy_details"]["last_period"])
         export = update_repo(_system["energy_details"]["last_period"])
         trmnl_payload = copy.deepcopy(_system["energy_details"]["last_period"])
-        saved = export.value_of_energy_consumed - export.cost_of_energy_consumed
-        trmnl_payload["total_saved"] = f"{saved:.2f}"
+        trmnl_payload["total_saved"] = (
+            export.value_of_energy_consumed - export.cost_of_energy_consumed
+        )
         aggregation = export_repo.get_aggregation_stats()
-        trmnl_payload["lifetime_total_saved"] = f"{aggregation.total_saved:.2f}"
+        trmnl_payload["lifetime_total_saved"] = aggregation.total_saved
         trmnl_payload["solar_data"] = [
             [trmnl_payload["date"], trmnl_payload["solar_production"]]
         ]
