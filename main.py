@@ -6,6 +6,7 @@ import importlib
 import asyncio
 import copy
 from datetime import datetime
+from google.cloud import datastore
 import json
 import os
 import logging
@@ -16,17 +17,50 @@ import aiohttp.web
 from anker_solix_api import common
 from anker_solix_api.api.api import AnkerSolixApi
 
+from repos import HomeEnergyDailyExport, HomeEnergyDailyExportRepo
+
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 _LOGGER.addHandler(logging.StreamHandler())
 # _LOGGER.setLevel(logging.DEBUG)    # enable for detailed API output
 CONSOLE: logging.Logger = common.CONSOLE
+
+datastore_client = datastore.Client()
+export_repo = HomeEnergyDailyExportRepo(datastore_client)
 
 
 def _out(jsondata):
     CONSOLE.info(json.dumps(jsondata, indent=2))
 
 
-FLAT_PRICE_PER_KWH = 0.1375
+FLAT_PRICE_PER_KWH = 0.1338
+SUPER_OFF_PEAK_PRICE_PER_KWH = 0.1338
+
+
+def update_repo(anker_data) -> HomeEnergyDailyExport:
+    grid_to_battery = float(anker_data["grid_to_battery"])
+    grid_to_home = float(anker_data["grid_to_home"])
+    battery_to_home = float(anker_data["battery_to_home"])
+
+    value_of_energy_consumed = (grid_to_home + battery_to_home) * FLAT_PRICE_PER_KWH
+    cost_of_energy_consumed = (
+        grid_to_home + grid_to_battery
+    ) * SUPER_OFF_PEAK_PRICE_PER_KWH
+
+    entity = HomeEnergyDailyExport(
+        energy_date=anker_data["date"],
+        grid_to_battery=grid_to_battery,
+        grid_to_home=grid_to_home,
+        battery_to_home=battery_to_home,
+        solar_production=float(anker_data["solar_production"]),
+        fixed_price_per_kwh=FLAT_PRICE_PER_KWH,
+        value_of_energy_consumed=value_of_energy_consumed,
+        super_off_peak_price_per_kwh=SUPER_OFF_PEAK_PRICE_PER_KWH,
+        cost_of_energy_consumed=cost_of_energy_consumed,
+    )
+
+    export_repo.upsert(entity)
+
+    return entity
 
 
 async def update_trmnl(myapi) -> None:
@@ -34,17 +68,12 @@ async def update_trmnl(myapi) -> None:
 
     if "energy_details" in _system and "last_period" in _system["energy_details"]:
         _out(_system["energy_details"]["last_period"])
+        export = update_repo(_system["energy_details"]["last_period"])
         trmnl_payload = copy.deepcopy(_system["energy_details"]["last_period"])
-        costs = (
-            float(trmnl_payload["grid_to_battery"])
-            + float(trmnl_payload["grid_to_home"])
-        ) * FLAT_PRICE_PER_KWH
-        usage = (
-            float(trmnl_payload["grid_to_home"])
-            + float(trmnl_payload["battery_to_home"])
-        ) * FLAT_PRICE_PER_KWH
-        saved = usage - costs
+        saved = export.value_of_energy_consumed - export.cost_of_energy_consumed
         trmnl_payload["total_saved"] = f"{saved:.2f}"
+        aggregation = export_repo.get_aggregation_stats()
+        trmnl_payload["lifetime_total_saved"] = f"{aggregation.total_saved:.2f}"
         trmnl_payload["solar_data"] = [
             [trmnl_payload["date"], trmnl_payload["solar_production"]]
         ]
