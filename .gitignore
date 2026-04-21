@@ -1,2 +1,4 @@
 .aider*
 app.yaml
+
+__pycache__

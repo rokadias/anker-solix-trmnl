@@ -1,6 +1,8 @@
-anker_solix_api @ git+https://github.com/rokadias/anker_solix_api.git@51bbfd4cdd5d3cc0ca04e0a3530b7c4460e67235
+anker_solix_api @ git+https://github.com/rokadias/anker_solix_api.git@391e7dba9e7344e22b520276bb1d0d2a35f66bee
 cryptography==45.0.5
 aiohttp==3.12.15
 aiofiles==24.1.0
 google-cloud-datastore==2.24.0
 gunicorn==23.0.0
+paho-mqtt==2.1.0
+python-dotenv==1.2.1
