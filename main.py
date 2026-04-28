@@ -33,7 +33,7 @@ def _out(jsondata):
 
 
 FLAT_PRICE_PER_KWH = 0.1338
-SUPER_OFF_PEAK_PRICE_PER_KWH = 0.1338
+SUPER_OFF_PEAK_PRICE_PER_KWH = 0.0805
 
 
 def update_repo(anker_data) -> HomeEnergyDailyExport:
