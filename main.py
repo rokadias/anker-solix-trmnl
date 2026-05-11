@@ -7,8 +7,12 @@ import asyncio
 import copy
 from datetime import datetime
 from google.cloud import datastore
+from enum import Enum
 import json
+import math
 import os
+import re
+import statistics
 import logging
 from pathlib import Path
 
@@ -29,22 +33,94 @@ export_repo = HomeEnergyDailyExportRepo(datastore_client)
 
 
 def _out(jsondata):
-    CONSOLE.info(json.dumps(jsondata, indent=2))
+    CONSOLE.info(json.dumps(jsondata, default=str, indent=2))
+
+
+class TouRate(Enum):
+    SUPER_OFF_PEAK = "super_off_peak"
+    MID_OFF_PEAK = "mid_off_peak"
+    PEAK = "peak"
 
 
 FLAT_PRICE_PER_KWH = 0.1338
-SUPER_OFF_PEAK_PRICE_PER_KWH = 0.0805
+
+RATE_COST_PER_KWH_LOOKUP = {
+    TouRate.SUPER_OFF_PEAK: 0.0805,
+    TouRate.MID_OFF_PEAK: 0.1409,
+    TouRate.PEAK: 0.1610,
+}
 
 
-def update_repo(anker_data) -> HomeEnergyDailyExport:
+SUPER_OFF_PEAK_HOURS = [[0, 5]]
+MID_OFF_PEAK_HOURS = [[6, 16], [21, 23]]
+PEAK_HOURS = [[17, 20]]
+
+
+RATE_BY_HOUR_LOOKUP = (
+    {
+        i: TouRate.SUPER_OFF_PEAK
+        for rate_arr in SUPER_OFF_PEAK_HOURS
+        for i in range(rate_arr[0], rate_arr[1] + 1)
+    }
+    | {
+        i: TouRate.MID_OFF_PEAK
+        for rate_arr in MID_OFF_PEAK_HOURS
+        for i in range(rate_arr[0], rate_arr[1] + 1)
+    }
+    | {
+        i: TouRate.PEAK
+        for rate_arr in PEAK_HOURS
+        for i in range(rate_arr[0], rate_arr[1] + 1)
+    }
+)
+
+TIMING_PATTERN = re.compile(r"(?P<hour>\d{2}):(?P<minute>\d{2})")
+
+
+async def get_cost(myapi, anker_data) -> float:
+    cost_date = datetime.strptime(anker_data["date"], "%Y-%m-%d")
+
+    stats = await myapi.powerpanelApi.energy_statistics(
+        siteId=list(myapi.sites.keys())[0],
+        rangeType="day",
+        startDay=cost_date,
+        endDay=cost_date,
+        sourceType="grid",
+    )
+    _out(stats)
+
+    results = {}
+    for pwr in stats["power"]:
+        match_time = TIMING_PATTERN.search(pwr["time"])
+        hour = int(match_time.group("hour"))
+        minute = int(match_time.group("minute"))
+        hour = hour if minute > 0 else (hour + 23) % 24
+
+        results.setdefault(hour, [])
+        results[hour] += [
+            float(info["value"]) for info in pwr["powerInfos"] if info["type"] == "grid"
+        ]
+    for [h, powers] in results.items():
+        results[h] = round(statistics.fmean(powers), 2)
+
+    total_cost = round(
+        math.fsum(
+            RATE_COST_PER_KWH_LOOKUP[RATE_BY_HOUR_LOOKUP[h]] * energy_delivered
+            for [h, energy_delivered] in results.items()
+        ),
+        2,
+    )
+
+    return total_cost
+
+
+async def update_repo(myapi, anker_data) -> HomeEnergyDailyExport:
     grid_to_battery = float(anker_data["grid_to_battery"])
     grid_to_home = float(anker_data["grid_to_home"])
     battery_to_home = float(anker_data["battery_to_home"])
 
     value_of_energy_consumed = (grid_to_home + battery_to_home) * FLAT_PRICE_PER_KWH
-    cost_of_energy_consumed = (
-        grid_to_home + grid_to_battery
-    ) * SUPER_OFF_PEAK_PRICE_PER_KWH
+    cost_of_energy_consumed = await get_cost(myapi, anker_data)
 
     entity = HomeEnergyDailyExport(
         energy_date=anker_data["date"],
@@ -54,7 +130,7 @@ def update_repo(anker_data) -> HomeEnergyDailyExport:
         solar_production=float(anker_data["solar_production"]),
         fixed_price_per_kwh=FLAT_PRICE_PER_KWH,
         value_of_energy_consumed=value_of_energy_consumed,
-        super_off_peak_price_per_kwh=SUPER_OFF_PEAK_PRICE_PER_KWH,
+        super_off_peak_price_per_kwh=RATE_COST_PER_KWH_LOOKUP[TouRate.SUPER_OFF_PEAK],
         cost_of_energy_consumed=cost_of_energy_consumed,
     )
 
@@ -68,7 +144,7 @@ async def update_trmnl(myapi) -> None:
 
     if "energy_details" in _system and "last_period" in _system["energy_details"]:
         _out(_system["energy_details"]["last_period"])
-        export = update_repo(_system["energy_details"]["last_period"])
+        export = await update_repo(myapi, _system["energy_details"]["last_period"])
         trmnl_payload = copy.deepcopy(_system["energy_details"]["last_period"])
         trmnl_payload["total_saved"] = (
             export.value_of_energy_consumed - export.cost_of_energy_consumed
